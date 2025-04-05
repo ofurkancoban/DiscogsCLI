@@ -1,2 +1,2 @@
-# discogs_cli
+# Discogs CLI
 Discogs Data Processor CLI
