@@ -6,7 +6,16 @@ import csv
 import xml.etree.ElementTree as ET
 from pathlib import Path
 from rich.console import Console
-from rich.progress import Progress, BarColumn, TextColumn, TimeElapsedColumn
+from rich.progress import (
+    Progress,
+    SpinnerColumn,
+    BarColumn,
+    TextColumn,
+    TimeElapsedColumn,
+    DownloadColumn,
+    TransferSpeedColumn,
+)
+
 from discogs.chunker import chunk_xml_by_type
 
 console = Console()
@@ -61,6 +70,8 @@ def _write_rows(chunk_file: Path, writer: csv.DictWriter, columns: list, record_
             elem.clear()
 
 
+from time import perf_counter
+
 def convert_chunks_to_csv(chunk_dir: Path, output_csv: Path, content_type: str):
     """
     Converts all XML chunks in a directory into a single CSV file.
@@ -72,10 +83,20 @@ def convert_chunks_to_csv(chunk_dir: Path, output_csv: Path, content_type: str):
         console.print(f"[red]No XML chunks found in {chunk_dir}[/red]")
         return
 
+    start_time = perf_counter()
+
     # Step 1: Discover columns
     column_set = set()
     console.print("[bold]Step 1:[/] Scanning tags...")
-    with Progress(TextColumn("{task.description}"), BarColumn(), TimeElapsedColumn()) as p:
+
+    with Progress(
+        SpinnerColumn(),
+        TextColumn("[progress.description]{task.description}"),
+        BarColumn(),
+        "[progress.percentage]{task.percentage:.1f}%",
+        "•",
+        TimeElapsedColumn()
+    ) as p:
         task = p.add_task("Scanning...", total=len(chunks))
         for chunk in chunks:
             _scan_columns(chunk, record_tag, column_set)
@@ -85,21 +106,34 @@ def convert_chunks_to_csv(chunk_dir: Path, output_csv: Path, content_type: str):
 
     # Step 2: Write CSV
     console.print(f"[bold]Step 2:[/] Writing [green]{output_csv.name}[/green] with {len(columns)} columns...")
+
     with open(output_csv, "w", newline="", encoding="utf-8") as f:
         writer = csv.DictWriter(f, fieldnames=columns)
         writer.writeheader()
 
-        with Progress(TextColumn("{task.description}"), BarColumn(), TimeElapsedColumn()) as p:
+        with Progress(
+            SpinnerColumn(),
+            TextColumn("[progress.description]{task.description}"),
+            BarColumn(),
+            "[progress.percentage]{task.percentage:.1f}%",
+            "•",
+            TimeElapsedColumn()
+        ) as p:
             task = p.add_task("Converting...", total=len(chunks))
             for chunk in chunks:
                 _write_rows(chunk, writer, columns, record_tag)
                 p.update(task, advance=1)
 
-    console.print(f"[green]✔ CSV saved:[/] {output_csv}")
+    duration = perf_counter() - start_time
+    output_size_mb = output_csv.stat().st_size / (1024 * 1024)
 
-    # Sil → chunk klasörü
-    shutil.rmtree(chunk_dir, ignore_errors=True)
-
+    console.print(f"\n[green]✔ CSV saved:[/] {output_csv}")
+    console.print("[bold green]✔ Conversion completed[/bold green]")
+    console.print(f"[bold white]📄 Chunks processed:[/] {len(chunks)} files")
+    console.print(f"[bold white]🧩 Output CSV:[/] {output_csv.name}")
+    console.print(f"[bold white]💾 Output size:[/] {output_size_mb:.2f} MB")
+    console.print(f"[bold white]🗂 Saved to:[/] {output_csv.parent}")
+    console.print(f"[bold white]⏱ Duration:[/] {duration:.1f} seconds")
 
 def convert_xml_to_csv(xml_path: Path, content_type: str) -> Path:
     chunk_dir = xml_path.parent / f"chunked_{content_type}"

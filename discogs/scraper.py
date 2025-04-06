@@ -5,6 +5,8 @@ import requests
 import pandas as pd
 import xml.etree.ElementTree as ET
 from datetime import datetime
+from pathlib import Path
+from discogs.config import get_download_dir
 
 S3_BASE_URL = "https://discogs-data-dumps.s3.us-west-2.amazonaws.com/"
 S3_PREFIX = "data/"
@@ -58,16 +60,27 @@ def list_files(directory_prefix: str) -> pd.DataFrame:
             ctype = "releases"
 
         if ctype != "unknown" and key.endswith(".gz"):
+            month = get_month_from_key(key)
+            filename = Path(key).name
             data.append({
                 "key": key,
                 "size_bytes": size,
                 "last_modified": last_modified,
-                "month": get_month_from_key(key),
+                "month": month,
                 "content": ctype,
+                "filename": filename,
                 "url": S3_BASE_URL + key,
             })
 
-    return pd.DataFrame(data)
+    df = pd.DataFrame(data)
+
+    # İndirilmiş/extract edilmiş/convert edilmiş bilgilerini ekle
+    download_dir = get_download_dir()
+    df["downloaded"] = df["filename"].apply(lambda fn: (download_dir / "Datasets" / get_month_from_key(fn) / fn).exists())
+    df["extracted"] = df["filename"].apply(lambda fn: (download_dir / "Datasets" / get_month_from_key(fn) / fn.replace(".gz", "")).exists())
+    df["converted"] = df["filename"].apply(lambda fn: (download_dir / "Datasets" / get_month_from_key(fn) / fn.replace(".gz", ".csv")).exists())
+
+    return df
 
 
 def get_month_from_key(key: str) -> str:

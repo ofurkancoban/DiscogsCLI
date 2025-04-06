@@ -5,10 +5,25 @@ from pathlib import Path
 from rich.console import Console
 from rich.prompt import Prompt
 
-CONFIG_PATH = Path.home() / ".discogscli" / "config.json"
+
+from pathlib import Path
+
+CONFIG_PATH = Path.home() / ".discogs_config.json"
 DEFAULT_DOWNLOAD_PATH = Path.home() / "Downloads" / "Discogs"
 
 console = Console()
+
+def get_download_dir() -> Path:
+    if CONFIG_PATH.exists():
+        path = CONFIG_PATH.read_text().strip()
+        if path:
+            return Path(path)
+    return DEFAULT_DOWNLOAD_PATH
+
+def set_download_dir(path: str) -> None:
+    CONFIG_PATH.write_text(path.strip())
+
+
 
 
 def load_config() -> dict:

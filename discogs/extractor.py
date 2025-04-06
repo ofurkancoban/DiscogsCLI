@@ -1,29 +1,17 @@
-# discogs/extractor.py
-
 import gzip
 from pathlib import Path
 from rich.console import Console
 from rich.progress import Progress, SpinnerColumn, BarColumn, TimeElapsedColumn, TextColumn
 
-console = Console()
-
-import gzip
-from pathlib import Path
-from rich.console import Console
-from rich.progress import Progress, SpinnerColumn, BarColumn, TextColumn, TimeElapsedColumn
+console = Console()  # ✔ Sadece bir kez tanımla
 
 def extract_gz(gz_path: Path, delete_original: bool = False) -> Path:
-    """
-    Extracts a .gz file to .xml in the same directory.
-    If delete_original=True, removes the original .gz after extraction.
-    """
     if gz_path.suffix != ".gz":
         raise ValueError("File is not a .gz file")
 
-    xml_path = gz_path.with_suffix("")  # removes ".gz"
+    xml_path = gz_path.with_suffix("")
     total_size = gz_path.stat().st_size
 
-    console = Console()
     with Progress(
         SpinnerColumn(),
         TextColumn("[progress.description]{task.description}"),
@@ -36,7 +24,7 @@ def extract_gz(gz_path: Path, delete_original: bool = False) -> Path:
 
         with gzip.open(gz_path, 'rb') as f_in, open(xml_path, 'wb') as f_out:
             while True:
-                chunk = f_in.read(1024 * 1024)  # 1MB
+                chunk = f_in.read(1024 * 1024)
                 if not chunk:
                     break
                 f_out.write(chunk)
@@ -51,12 +39,7 @@ def extract_gz(gz_path: Path, delete_original: bool = False) -> Path:
     return xml_path
 
 def extract_gz_files(files: list[Path], delete_original: bool = False) -> list[Path]:
-    """
-    Takes a list of .gz files and extracts them.
-    Returns a list of .xml file paths.
-    """
-    extracted = []
-    for file in files:
-        extracted_file = extract_gz(file, delete_original=delete_original)
-        extracted.append(extracted_file)
-    return extracted
+    return [extract_gz(file, delete_original=delete_original) for file in files]
+
+def get_extracted_path(gz_path: Path) -> Path:
+    return gz_path.with_suffix("")

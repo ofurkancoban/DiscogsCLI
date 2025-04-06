@@ -1,140 +1,147 @@
-# discogs/main.py
-import sys
-from pathlib import Path
-sys.path.append(str(Path(__file__).resolve().parent))
 import typer
-from rich.console import Console
-from rich.panel import Panel
-from rich.markdown import Markdown
-from discogs.config import get_download_dir
+from discogs.selector import show_welcome, display_status_table, select_indices
 from discogs.scraper import get_latest_files
-from discogs.selector import select_files, select_indices, show_welcome
 from discogs.downloader import download_files_threaded
-from discogs.extractor import extract_gz
-from discogs.chunker import chunk_xml_by_type
-from discogs.converter import convert_chunks_to_csv, convert_xml_to_csv
+from discogs.extractor import extract_gz_files
+from discogs.converter import convert_xml_to_csv
+from discogs.config import get_download_dir
+from discogs.utils import open_folder
+from pathlib import Path
+from rich.console import Console
+import time
 
-
-
+app = typer.Typer(help="\U0001F4E6 Discogs CLI - Download, extract, and convert Discogs data dumps.")
 console = Console()
-app = typer.Typer(
-    help="📦 Discogs CLI - Download, extract, and convert Discogs data dumps.",
-    add_completion=False,
-    no_args_is_help=True
-)
 
+@app.command(help="One-click pipeline: Fetch latest files, download, extract, and convert to CSV.")
+def run():
+    show_welcome()
 
-@app.command()
-def run(
-    auto: bool = typer.Option(False, "--auto", "-a", help="Run in auto mode (download, extract, convert)"),
-    download_dir: Path = typer.Option(None, help="Custom download directory"),
-    delete_gz: bool = typer.Option(False, help="Delete .gz files after extraction"),
-):
-    """
-    Scrape → Select → Download → Extract → Chunk → Convert
-    """
-    typer.echo("🔍 Fetching available Discogs files...")
+    download_dir = get_download_dir()
+    typer.echo("\U0001F50D Fetching available Discogs files...")
     df = get_latest_files()
 
     if df.empty:
         typer.echo("No data found.")
         raise typer.Exit()
 
-    selected = select_files(df)
-    if not selected:
+    display_status_table(df, download_dir)
+    indices = select_indices(df)
+    if not indices:
         typer.echo("No selection made.")
         raise typer.Exit()
 
-    dest = download_dir or get_download_dir()
-    dest.mkdir(parents=True, exist_ok=True)
-
-    # Download
-    downloaded = download_files_threaded(df, selected, dest)
-
-    if not auto:
-        # ❓ Extract now?
-        if typer.confirm("Do you want to extract the downloaded file(s) now?", default=True):
-            from discogs.extractor import extract_gz_files
-            extracted = extract_gz_files(downloaded, delete_original=delete_gz)
-
-            # ❓ Convert now?
-            if typer.confirm("Do you want to convert the extracted XML files to CSV?", default=True):
-                for xml_file in extracted:
-                    content_type = xml_file.stem.split("_")[-1]
-                    chunk_dir = chunk_xml_by_type(xml_file, content_type)
-                    csv_path = xml_file.with_suffix(".csv")
-                    convert_chunks_to_csv(chunk_dir, csv_path, content_type)
-                typer.echo("🎉 All done!")
-            else:
-                typer.echo("ℹ️ You can convert later using the 'convert' command.")
-        else:
-            typer.echo("ℹ️ You can extract later using the 'extract' command.")
-        raise typer.Exit()
-
-    # Auto mode:
-    from discogs.extractor import extract_gz_files
-    extracted = extract_gz_files(downloaded, delete_original=delete_gz)
+    start = time.time()
+    downloaded = download_files_threaded(df, indices, download_dir)
+    extracted = extract_gz_files(downloaded)
     for xml_file in extracted:
         content_type = xml_file.stem.split("_")[-1]
-        chunk_dir = chunk_xml_by_type(xml_file, content_type)
-        csv_path = xml_file.with_suffix(".csv")
-        convert_chunks_to_csv(chunk_dir, csv_path, content_type)
+        convert_xml_to_csv(xml_file, content_type)
 
-    typer.echo("🎉 All done!")
-
-
-@app.command()
-def show():
-    """
-    Show available Discogs dump files.
-    """
-    df = get_latest_files()
-    if df.empty:
-        typer.echo("No files found.")
-    else:
-        from discogs.selector import display_table
-        display_table(df)
-
+    duration = time.time() - start
+    typer.secho(f"\n✅ Done in {duration:.1f} seconds!", fg="green")
+    open_folder(download_dir)
 
 @app.command()
-def download(
-    auto_extract: bool = typer.Option(False, help="Extract .gz file after download automatically"),
-    auto_convert: bool = typer.Option(False, help="Convert XML to CSV after extraction"),
-):
-    """
-    Download selected Discogs data files.
-    """
+def download(auto_extract: bool = True, auto_convert: bool = True):
+    """Download selected Discogs data files."""
+    download_dir = get_download_dir()
+    typer.echo("\U0001F50D Fetching available Discogs files...")
     df = get_latest_files()
+
     if df.empty:
-        typer.echo("No files found.")
+        typer.echo("No data found.")
         raise typer.Exit()
 
+    display_status_table(df, download_dir)
     indices = select_indices(df)
     if not indices:
         typer.echo("No files selected.")
         raise typer.Exit()
 
+    downloaded = download_files_threaded(df, indices, download_dir)
+
+    if auto_extract:
+        extracted = extract_gz_files(downloaded)
+        if auto_convert:
+            for xml_file in extracted:
+                content_type = xml_file.stem.split("_")[-1]
+                convert_xml_to_csv(xml_file, content_type)
+
+    open_folder(download_dir)
+
+@app.command()
+def convert():
+    """Convert extracted XML files to CSV."""
+    from discogs.converter import convert_interactively
+    convert_interactively()
+
+@app.command()
+def extract():
+    """Extract downloaded .gz files (interactive)."""
+    from discogs.extractor import extract_interactively
+    extract_interactively()
+
+@app.command("delete")
+def delete(all: bool = typer.Option(False, "--all", help="Delete all downloaded, extracted and converted files.")):
+    """
+    Delete downloaded, extracted, and converted files.
+    """
     download_dir = get_download_dir()
-    download_dir.mkdir(parents=True, exist_ok=True)
+    df = get_latest_files()
 
-    for i in indices:
+    if df.empty:
+        console.print("[red]No files found.[/red]")
+        raise typer.Exit()
+
+    display_status_table(df, download_dir)
+
+    selected = list(range(len(df))) if all else select_indices(df, allow_all=True)
+
+    if not selected:
+        console.print("[yellow]No files selected.[/yellow]")
+        raise typer.Exit()
+
+    for i in selected:
         row = df.iloc[i]
-        url = row["url"]
-        downloaded_file = download_files_threaded(url, download_dir)
+        year_month = row["month"]
+        filename = Path(row["url"]).name
+        data_dir = download_dir / "Datasets" / year_month
 
-        if auto_extract:
-            typer.echo("📦 Extracting...")
-            extracted_path = extract_gz(downloaded_file)
+        gz_file = data_dir / filename
+        xml_file = gz_file.with_suffix("")
+        csv_file = xml_file.with_suffix(".csv")
 
-            if auto_convert:
-                typer.echo("🔄 Converting...")
-                content_type = row["content"]
-                convert_xml_to_csv(extracted_path, content_type)
+        for file in [gz_file, xml_file, csv_file]:
+            if file.exists():
+                try:
+                    file.unlink()
+                    console.print(f"[green]✔ Deleted:[/] {file.name}")
+                except Exception as e:
+                    console.print(f"[red]✗ Failed to delete {file.name}:[/] {e}")
+            else:
+                console.print(f"[dim]• Not found:[/] {file.name}")
+@app.command()
+def show():
+    """Show available Discogs dump files."""
+    from discogs.selector import show_welcome
+    from discogs.scraper import get_latest_files
+    from discogs.config import get_download_dir
 
+    show_welcome()
+    df = get_latest_files()
+    display_status_table(df, get_download_dir())
 
+@app.command()
+def config():
+    """Set or change download folder."""
+    from discogs.config import set_download_dir
+    set_download_dir()
+
+# 👇 Komutsuz çalıştırıldığında otomatik run başlat
 if __name__ == "__main__":
+    import sys
     if len(sys.argv) == 1:
-        show_welcome()
-        app(prog_name="discogs")
+        app(prog_name="discogs", args=["run"])
     else:
         app()
