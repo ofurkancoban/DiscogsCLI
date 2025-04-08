@@ -10,7 +10,8 @@ from pathlib import Path
 from rich.console import Console
 import time
 
-app = typer.Typer(help="\U0001F4E6 Discogs CLI - Download, extract, and convert Discogs data dumps.")
+app = typer.Typer(help="📦 Discogs CLI - Download, extract, and convert Discogs data dumps.",
+                  invoke_without_command=True)
 console = Console()
 
 @app.command(help="One-click pipeline: Fetch latest files, download, extract, and convert to CSV.")
@@ -137,6 +138,11 @@ def config():
     """Set or change download folder."""
     from discogs.config import set_download_dir
     set_download_dir()
+
+@app.callback()
+def main(ctx: typer.Context):
+    if ctx.invoked_subcommand is None:
+        run()
 
 # 👇 Komutsuz çalıştırıldığında otomatik run başlat
 if __name__ == "__main__":
