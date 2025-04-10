@@ -32,12 +32,6 @@ cd DiscogsCLI
 pip install -e .
 ```
 
-### 🍻 Install with Homebrew
-```bash
-brew tap ofurkancoban/discogs
-brew install discogs
-```
-
 ---
 
 ## 💻 Usage
