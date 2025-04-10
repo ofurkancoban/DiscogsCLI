@@ -2,7 +2,6 @@
 
 A modern command-line tool to **download**, **extract**, and **convert** Discogs data dumps into structured CSV files.
 
-Built with ❤️ by [@ofurkancoban](https://github.com/ofurkancoban)
 
 ---
 
@@ -22,8 +21,8 @@ Built with ❤️ by [@ofurkancoban](https://github.com/ofurkancoban)
 ## 🧩 Installation
 
 ```bash
-git clone https://github.com/ofurkancoban/discogs-cli.git
-cd discogs-cli
+git clone https://github.com/ofurkancoban/DiscogsCLI.git
+cd DiscogsCLI
 pip install -e .
 ```
 
@@ -32,13 +31,13 @@ pip install -e .
 ## 💻 Usage
 
 ```bash
-python -m discogs.main run        # Auto: download → extract → convert
-python -m discogs.main show       # List available Discogs data
-python -m discogs.main download   # Just download selected files
-python -m discogs.main extract    # Extract downloaded .gz files
-python -m discogs.main convert    # Convert extracted XML to CSV
-python -m discogs.main delete     # Delete files by selection or --all
-python -m discogs.main config     # Set download folder
+discogs run        # Auto: download → extract → convert
+discogs show       # List available Discogs data
+discogs download   # Just download selected files
+discogs extract    # Extract downloaded .gz files
+discogs convert    # Convert extracted XML to CSV
+discogs delete     # Delete files by selection or --all
+discogs config     # Set download folder
 ```
 
 ---
@@ -60,18 +59,18 @@ python -m discogs.main config     # Set download folder
 ## 🧠 Example Workflow
 
 ```bash
-python -m discogs.main show
+discogs show
 # [1] 2025-04 | releases | 950 MB
 # [2] 2025-04 | artists  | 320 MB
 
-python -m discogs.main download
+discogs download
 # Select 1,2
 # Downloads only
 
-python -m discogs.main extract
+discogs extract
 # Select file to extract
 
-python -m discogs.main convert
+discogs convert
 # Select XML to convert
 ```
 
@@ -88,3 +87,6 @@ python -m discogs.main convert
 ## 📜 License
 
 MIT — use freely, mention when you do something cool 😎
+---
+
+Built with ❤️ by [@ofurkancoban](https://github.com/ofurkancoban)
