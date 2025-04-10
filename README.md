@@ -2,7 +2,7 @@
 <p align="center">
   <img src="img/logo.png" alt="Discogs Logo" width="200"/>
 </p>
-A modern command-line tool to **download**, **extract**, and **convert** Discogs data dumps into structured CSV files.
+A modern command-line tool to `download`, `extract`, and `convert` Discogs data dumps into structured CSV files.
 <p align="center">
   <img src="img/preview.gif" />
 </p>
