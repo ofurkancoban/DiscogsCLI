@@ -1,4 +1,3 @@
-```markdown
 # 🎧 Discogs CLI — Data Processor Tool
 
 A modern command-line tool to **download**, **extract**, and **convert** Discogs data dumps into structured CSV files.
@@ -89,4 +88,3 @@ python -m discogs.main convert
 ## 📜 License
 
 MIT — use freely, mention when you do something cool 😎
-```
