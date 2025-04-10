@@ -1,7 +1,9 @@
 # 🎧 Discogs CLI — Data Processor Tool
 
 A modern command-line tool to **download**, **extract**, and **convert** Discogs data dumps into structured CSV files.
-
+<p align="center">
+  <img src="img/preview.gif" />
+</p>
 
 ---
 
