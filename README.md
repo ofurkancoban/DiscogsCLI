@@ -20,10 +20,22 @@ A modern command-line tool to **download**, **extract**, and **convert** Discogs
 
 ## 🧩 Installation
 
+### 🍻 Install with Homebrew
+```bash
+brew tap ofurkancoban/discogs
+brew install discogs
+```
+### or
 ```bash
 git clone https://github.com/ofurkancoban/DiscogsCLI.git
 cd DiscogsCLI
 pip install -e .
+```
+
+### 🍻 Install with Homebrew
+```bash
+brew tap ofurkancoban/discogs
+brew install discogs
 ```
 
 ---
