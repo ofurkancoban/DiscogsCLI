@@ -17,11 +17,13 @@ console = Console()
 
 def _download_file(url: str, target_path: Path, progress, task_id, retries: int = 5) -> Path:
     """
-    Resumable and retryable file downloader with progress bar update.
+    Downloads a file with support for resume and retry.
+    Updates a Rich progress bar during download.
     """
     headers = {}
     downloaded = 0
 
+    # If file exists, resume from where it left off
     if target_path.exists():
         downloaded = target_path.stat().st_size
         headers["Range"] = f"bytes={downloaded}-"
@@ -41,9 +43,10 @@ def _download_file(url: str, target_path: Path, progress, task_id, retries: int 
                             downloaded += len(chunk)
                             progress.update(task_id, completed=downloaded)
 
-            return target_path
+            return target_path  # Download completed
 
         except requests.RequestException as e:
+            # Retry a few times if download fails
             if attempt < retries - 1:
                 sleep(1.5)
                 continue
@@ -52,14 +55,16 @@ def _download_file(url: str, target_path: Path, progress, task_id, retries: int 
 
 def download_files_threaded(df, selected_indexes, download_dir: Path) -> list[Path]:
     """
-    Downloads selected files using multi-threading and shows combined progress bars.
+    Downloads multiple files concurrently using threads.
+    Displays a combined progress bar for all downloads.
     """
     urls = [df.iloc[i]["url"] for i in selected_indexes]
     paths = []
     total_bytes = 0
     start_time = time.time()
 
-    with Progress(SpinnerColumn(),
+    with Progress(
+        SpinnerColumn(),
         TextColumn("[progress.description]{task.description} → [bold blue]{task.fields[filename]}", justify="right"),
         BarColumn(),
         "[progress.percentage]{task.percentage:>3.1f}%",
@@ -75,23 +80,28 @@ def download_files_threaded(df, selected_indexes, download_dir: Path) -> list[Pa
 
             for url in urls:
                 filename = Path(urlparse(url).path).name
+
+                # Extract date from filename and create target folder
                 date_str = filename.split("_")[1]
                 year_month = datetime.strptime(date_str, "%Y%m%d").strftime("%Y-%m")
                 target_folder = download_dir / "Datasets" / year_month
                 target_folder.mkdir(parents=True, exist_ok=True)
                 target_path = target_folder / filename
 
+                # Skip already downloaded files
                 if target_path.exists():
                     console.print(f"[yellow]⚠ Already downloaded:[/] {filename}")
                     paths.append(target_path)
                     continue
 
+                # Prepare progress bar for this file
                 total = int(requests.head(url).headers.get("Content-Length", 0))
                 total_bytes += total
                 task_id = progress.add_task("Downloading", filename=filename, total=total)
                 future = executor.submit(_download_file, url, target_path, progress, task_id)
                 futures.append(future)
 
+            # Wait for all downloads to finish
             for future in as_completed(futures):
                 try:
                     result = future.result()
@@ -102,6 +112,7 @@ def download_files_threaded(df, selected_indexes, download_dir: Path) -> list[Pa
     duration = time.time() - start_time
     size_mb = total_bytes / (1024 ** 2)
 
+    # Final summary
     console.print(f"\n[green]📥 {len(paths)} file(s) downloaded[/]")
     console.print(f"[cyan]💾 Total size:[/] {size_mb:.1f} MB")
     console.print(f"[cyan]⏱ Duration:[/] {duration:.1f} seconds")
