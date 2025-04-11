@@ -153,18 +153,12 @@ def config():
     from discogs.config import set_download_dir
     set_download_dir()
 
-@app.callback()
-def main(ctx: typer.Context):
-    """
-    If no subcommand is provided, defaults to running the `run` pipeline.
-    """
-    if ctx.invoked_subcommand is None:
-        run()
-
-# Automatically run the `run` pipeline if no arguments are provided
-if __name__ == "__main__":
+def entrypoint():
     import sys
     if len(sys.argv) == 1:
-        app(prog_name="discogs", args=["run"])
+        app(prog_name="discogs", args=["run"])  # 👈 otomatik run
     else:
         app()
+
+if __name__ == "__main__":
+    entrypoint()

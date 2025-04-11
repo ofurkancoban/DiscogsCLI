@@ -153,7 +153,7 @@ def show_welcome():
 
     console.print(Panel.fit(
         ascii_logo,
-        title="Discogs Data Processor CLI",
+        title="Discogs Data Processor CLI (v1.5)",
         subtitle="by ofurkancoban",
         style="bold cyan"
     ))
