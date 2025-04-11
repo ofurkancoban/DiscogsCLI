@@ -1,4 +1,7 @@
-# 🎧 Discogs CLI — Data Processor Tool 💿
+<h1 align="center">
+  🎧 Discogs CLI — Data Processor Tool 💿
+</h1>
+
 <p align="center">
   <img src="img/logo.png" alt="Discogs Logo" width="200"/>
 </p>
