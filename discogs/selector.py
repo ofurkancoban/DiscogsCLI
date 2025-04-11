@@ -174,13 +174,13 @@ This tool allows you to:
 
 **Available Commands:**
 
-- `python -m discogs.main run` — Full auto mode (download → extract → convert)
-- `python -m discogs.main show` — Display available Discogs files
-- `python -m discogs.main download` — Download selected files
-- `python -m discogs.main extract` — Extract previously downloaded `.gz` files
-- `python -m discogs.main convert` — Convert extracted `.xml` files to `.csv`
-- `python -m discogs.main delete` — Delete files by selection (or `--all`)
-- `python -m discogs.main config` — Set or change your download folder
+- `discogs run` — Full auto mode (download → extract → convert)
+- `discogs show` — Display available Discogs files
+- `discogs download` — Download selected files
+- `discogs extract` — Extract previously downloaded `.gz` files
+- `discogs convert` — Convert extracted `.xml` files to `.csv`
+- `discogs delete` — Delete files by selection (or `--all`)
+- `discogs config` — Set or change your download folder
 
 ---
 
