@@ -26,6 +26,11 @@ A modern command-line tool to `download`, `extract`, and `convert` Discogs data 
 
 ## 🧩 Installation
 
+### 🐍 Install with PyPI
+```bash
+pip install DiscogsDataProcessorCLI
+```
+
 ### 🍻 Install with Homebrew
 ```bash
 brew tap ofurkancoban/discogs
