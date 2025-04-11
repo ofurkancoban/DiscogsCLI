@@ -4,7 +4,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="discogs",
-    version="1.5.0",
+    version="1.5.5",
     description="Discogs Data Processor CLI",
     author="ofurkancoban",
     author_email="ofurkancoban@gmail.com",
